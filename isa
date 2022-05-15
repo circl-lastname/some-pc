@@ -1,0 +1,87 @@
+32-bit
+
+Registers:
+A B X S
+
+Sizes:
+S D Q
+
+Instructions:
+nop
+setup
+
+lds <ptr>
+ldd <ptr>
+ldq <ptr>
+ldsi <int>
+lddi <int>
+ldqi <int>
+ldsp <ptr>
+lddp <ptr>
+ldqp <ptr>
+sts <ptr>
+std <ptr>
+stq <ptr>
+stsp <ptr>
+stdp <ptr>
+stqp <ptr>
+
+pops
+popd
+popq
+pushs
+pushd
+pushq
+
+adds
+addd
+addq
+subs
+subd
+subq
+muls
+muld
+mulq
+divs
+divd
+divq
+
+ors
+ord
+orq
+nors
+nord
+norq
+ands
+andd
+andq
+xors
+xord
+xorq
+
+tab
+tba
+tax
+txa
+tsx
+
+call <ptr>
+callp <ptr>
+ret
+jmp <ptr>
+jmpp <ptr>
+jeqs <ptr>
+jeqd <ptr>
+jeqq <ptr>
+jgts <ptr>
+jgtd <ptr>
+jgtq <ptr>
+jges <ptr>
+jged <ptr>
+jgeq <ptr>
+jlts <ptr>
+jltd <ptr>
+jltq <ptr>
+jles <ptr>
+jled <ptr>
+jleq <ptr>
