@@ -1,87 +1,61 @@
 32-bit
 
 Registers:
-A B X S
+A B C S
 
-Sizes:
-S D Q
+Access specifier:
+OOWWRRTT
+
+T = Access type
+  00 - Immediate
+  01 - Register
+  10 - Address
+  11 - Pointer
+
+R = Register (Register type only)
+  00 - A
+  01 - B
+  10 - C
+  11 - S
+
+W = Access width
+  00 - Single (8-bit)
+  01 - Double (16-bit)
+  10 - Quadruple (32-bit)
+  11 - Reserved
+
+O = Offset type (not Immediate or Register)
+  00 - No
+  01 - Offset before dereference
+  10 - Offset after dereference (Pointer only)
+  11 - Reserved
 
 Instructions:
-nop
-setup
+NOP
 
-lds <ptr>
-ldd <ptr>
-ldq <ptr>
-ldsi <int>
-lddi <int>
-ldqi <int>
-ldsp <ptr>
-lddp <ptr>
-ldqp <ptr>
-sts <ptr>
-std <ptr>
-stq <ptr>
-stsp <ptr>
-stdp <ptr>
-stqp <ptr>
+MOV <src> <dst>
+PUSH <src>
+POP <dst>
 
-pops
-popd
-popq
-pushs
-pushd
-pushq
+JMP <dst>
+JEQ <cp1> <cp2> <dst>
+JNE <cp1> <cp2> <dst>
+JGT <cp1> <cp2> <dst>
+JGE <cp1> <cp2> <dst>
+JLT <cp1> <cp2> <dst>
+JLE <cp1> <cp2> <dst>
+CALL <dst>
+RET
 
-adds
-addd
-addq
-subs
-subd
-subq
-muls
-muld
-mulq
-divs
-divd
-divq
+ADD <op1> <op2> <dst>
+SUB <op1> <op2> <dst>
+MUL <op1> <op2> <dst>
+DIV <op1> <op2> <dst>
 
-ors
-ord
-orq
-nors
-nord
-norq
-ands
-andd
-andq
-xors
-xord
-xorq
+OR <cp1> <cp2> <dst>
+NOR <cp1> <cp2> <dst>
+AND <cp1> <cp2> <dst>
+NAND <cp1> <cp2> <dst>
+XOR <cp1> <cp2> <dst>
+XNOR <cp1> <cp2> <dst>
 
-tab
-tba
-tax
-txa
-tsx
-
-call <ptr>
-callp <ptr>
-ret
-jmp <ptr>
-jmpp <ptr>
-jeqs <ptr>
-jeqd <ptr>
-jeqq <ptr>
-jgts <ptr>
-jgtd <ptr>
-jgtq <ptr>
-jges <ptr>
-jged <ptr>
-jgeq <ptr>
-jlts <ptr>
-jltd <ptr>
-jltq <ptr>
-jles <ptr>
-jled <ptr>
-jleq <ptr>
