@@ -1,5 +1,7 @@
 enum {
   INST_NOP = 0x00,
+  INST_EIN = 0x01,
+  INST_DIN = 0x02,
   
   INST_MOV = 0x10,
   INST_PUSH = 0x11,

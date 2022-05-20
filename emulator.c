@@ -7,7 +7,7 @@
 
 uint32_t reg_a;
 uint32_t reg_b;
-uint32_t reg_x;
+uint32_t reg_c;
 uint32_t reg_s;
 
 uint8_t memory[1048576];

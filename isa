@@ -32,6 +32,8 @@ O = Offset type (not Immediate or Register)
 
 Instructions:
 NOP
+EIN
+DIN
 
 MOV <src> <dst>
 PUSH <src>
@@ -59,3 +61,13 @@ NAND <cp1> <cp2> <dst>
 XOR <cp1> <cp2> <dst>
 XNOR <cp1> <cp2> <dst>
 
+Memory areas:
+0x00000000 - 0x000000ff - Processor and system control
+  0x00000004 - Initial PC address
+0x00000100 - 0x000004ff - Stack
+0x00000500 - 0x000008ff - Interrupt table
+
+0x00000900 - 0x00000fff - System I/O
+  0x00000900 - Print out
+0x00001000 - 0x00001fff - ROM
+0x00002000 - 0x000020ff - Temporary RAM
