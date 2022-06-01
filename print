@@ -1,3 +1,5 @@
+.at 0x1000
+
 MOV IQ 0 RAQ
 MOV IQ 0 RBQ
 MOV IQ 0 RCQ
@@ -8,7 +10,7 @@ CALL ASN put_char
 ADD RCQ IQ 1 RCQ
 JNE ASB string RCQ IS 0 ASN loop
 
-halt:
+.halt:
 JMP ASN halt
 
-.string "Hello, World!"
+.data "Hello, World!" 0
