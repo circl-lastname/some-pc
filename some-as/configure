@@ -17,7 +17,7 @@ Enviornment variables:
     Change C compiler (from gcc)
 
   CFLAGS
-    Change compiler flags (from -O2 -D DEBUG)
+    Change compiler flags (from -O2 -I../lib)
 
   LDFLAGS
     Change linker flags (from -s)
@@ -32,7 +32,7 @@ generate_ninja () {
   touch build.ninja
   
   CC=${CC:-gcc}
-  CFLAGS=${CFLAGS:-"-O2 -D DEBUG"}
+  CFLAGS=${CFLAGS:-"-O2 -I../lib"}
   LDFLAGS=${LDFLAGS:-"-s"}
   DESTDIR=${DESTDIR:-"/usr/local/bin"}
   dir=${dir:-build}

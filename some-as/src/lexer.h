@@ -19,13 +19,13 @@ typedef enum {
 
 typedef enum {
   TYPE_NONE,
+  TYPE_INTEGER,
   TYPE_STRING,
-  TYPE_NUMBER,
 } lex_data_type;
 
 typedef union {
+  uint32_t integer;
   char* string;
-  uint32_t number;
 } lex_data;
 
 typedef struct {

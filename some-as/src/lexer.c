@@ -129,6 +129,9 @@ static char* get_string(lex_state* s) {
           case '"':
             string[i] = '"';
           break;
+          case '\\':
+            string[i] = '\\';
+          break;
           default:
             error(s, "Unknown escape character");
           break;
@@ -159,7 +162,7 @@ static char* get_string(lex_state* s) {
   return string;
 }
 
-static uint32_t parse_number(lex_state* s, char* string, bool hex) {
+static uint32_t parse_integer(lex_state* s, char* string, bool hex) {
   size_t length = strlen(string);
   
   uint32_t divider = (hex ? 16 : 10);
@@ -248,8 +251,10 @@ void lex(lex_state* s) {
         if (s->ch == ':') {
           consume(s);
           put_token(s, TOKEN_LOCAL_LABEL, TYPE_STRING, &data);
-        } else {
+        } else if (s->statement_end_status) {
           put_token(s, TOKEN_DIRECTIVE, TYPE_STRING, &data);
+        } else {
+          put_token(s, TOKEN_SYMBOL, TYPE_STRING, &data);
         }
       break;
       case '0':
@@ -258,12 +263,12 @@ void lex(lex_state* s) {
         temp_string = get_until_disallowed(s);
         
         if (temp_string[0] == '0' && temp_string[1] == 'x') {
-          data.number = parse_number(s, &temp_string[2], true);
+          data.integer = parse_integer(s, &temp_string[2], true);
         } else {
-          data.number = parse_number(s, temp_string, false);
+          data.integer = parse_integer(s, temp_string, false);
         }
         
-        put_token(s, TOKEN_NUMBER, TYPE_NUMBER, &data);
+        put_token(s, TOKEN_NUMBER, TYPE_INTEGER, &data);
         
         free(temp_string);
       break;
@@ -294,8 +299,8 @@ void lex(lex_state* s) {
           data.string = temp_string;
           put_token(s, TOKEN_LABEL, TYPE_STRING, &data);
         } else if (isdigit(temp_string[0])) {
-          data.number = parse_number(s, temp_string, false);
-          put_token(s, TOKEN_NUMBER, TYPE_NUMBER, &data);
+          data.integer = parse_integer(s, temp_string, false);
+          put_token(s, TOKEN_NUMBER, TYPE_INTEGER, &data);
           
           free(temp_string);
         } else {

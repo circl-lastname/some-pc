@@ -2,6 +2,9 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
+#include "shared.h"
 
 void* try(void* input) {
   if (input == NULL) {
@@ -18,6 +21,49 @@ uint32_t u32_pow(uint32_t a, uint32_t b) {
     result *= a;
   }
   return result;
+}
+
+sc_table* sc_alloc() {
+  sc_table* table = try(malloc(sizeof(sc_table)));
+  
+  table->amount = 0;
+  table->size = 256;
+  table->entries = try(malloc(256*sizeof(sc_entry)));
+  
+  return table;
+}
+
+void sc_add(sc_table* table, char* string, uint32_t value) {
+  sc_entry* entry = &table->entries[table->amount];
+  
+  entry->string = try(malloc(strlen(string)+1));
+  strcpy(entry->string, string);
+  entry->value = value;
+  
+  table->amount++;
+  
+  if (table->amount >= table->size) {
+    table->size *= 2;
+    table->entries = try(realloc(table->entries, table->size*sizeof(sc_entry)));
+  }
+}
+
+uint32_t* sc_get(sc_table* table, char* string) {
+  for (long i = 0; i < table->amount; i++) {
+    // ew
+    if (!strcmp(string, table->entries[i].string)) {
+      return &table->entries[i].value;
+    }
+  }
+  return NULL;
+}
+
+void sc_free(sc_table* table) {
+  for (long i = 0; i < table->amount; i++) {
+    free(table->entries[i].string);
+  }
+  free(table->entries);
+  free(table);
 }
 
 // this is is a mini-lexer, ripping out some code from it to iterate over the file

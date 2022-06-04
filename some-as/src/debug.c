@@ -22,11 +22,11 @@
         case TYPE_NONE:
           printf("%s\n", token_name);
         break;
+        case TYPE_INTEGER:
+          printf("%s\t\t%"PRIu32"\n", token_name, s->tokens[i].data.integer);
+        break;
         case TYPE_STRING:
           printf("%s\t\t%s\n", token_name, s->tokens[i].data.string);
-        break;
-        case TYPE_NUMBER:
-          printf("%s\t\t%"PRIu32"\n", token_name, s->tokens[i].data.number);
         break;
       }
     }

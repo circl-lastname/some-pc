@@ -1,9 +1,10 @@
-/*
-#include <ctype.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <isa.h>
 
 #include "shared.h"
 #include "lexer.h"
@@ -18,111 +19,282 @@ static void consume(prs_state* s) {
   s->tk = &s->tokens[s->current_token];
 }
 
-static int needs_closing(char* element) {
-  if (!strcmp(element, "area") ||
-      !strcmp(element, "base") ||
-      !strcmp(element, "br") ||
-      !strcmp(element, "col") ||
-      !strcmp(element, "embed") ||
-      !strcmp(element, "hr") ||
-      !strcmp(element, "img") ||
-      !strcmp(element, "input") ||
-      !strcmp(element, "link") ||
-      !strcmp(element, "meta") ||
-      !strcmp(element, "param") ||
-      !strcmp(element, "source") ||
-      !strcmp(element, "track") ||
-      !strcmp(element, "wbr")) {
-    return 0;
-  } else {
-    return 1;
+static void write(prs_state* s, void* data, size_t size) {
+  if (!fwrite(data, size, 1, s->file)) {
+    perror("some-as");
+    exit(1);
+  }
+  s->current_address += size;
+}
+
+static uint32_t get_number_or_label(prs_state* s) {
+  uint32_t value;
+  
+  switch (s->tk->type) {
+    case TOKEN_SYMBOL:
+      uint32_t* temp_value = sc_get(s->local_table, s->tk->data.string);
+      if (!temp_value) {
+        temp_value = sc_get(s->global_table, s->tk->data.string);
+        if (!temp_value) {
+          error(s, "Unknown label");
+        }
+      }
+      value = *temp_value;
+    break;
+    case TOKEN_NUMBER:
+      value = s->tk->data.integer;
+    break;
+    default:
+      error(s, "Expected integer or label");
+    break;
+  }
+  
+  consume(s);
+  return value;
+}
+
+static uint8_t string_to_inst(prs_state* s, char* inst) {
+  // ew
+  #define F(n, a, c) \
+    if (!strcmp(inst, #n)) { \
+      return c; \
+    } else
+  ENUMERATE_INSTS(F)
+  #undef F
+  {
+    error(s, "Invalid instruction");
   }
 }
 
-static void recurse(prs_state* s) {
-  if (s->tk->type != TOKEN_BLOCK_BEGIN) {
-    error(s, "Expected TOKEN_BLOCK_BEGIN");
-  }
-  consume(s);
+static void parse_acs(prs_state* s, bool allow_offset);
+
+static void parse_acs_ap(prs_state* s, uint8_t type, bool allow_offset) {
+  uint8_t acs = 0;
   
-  if (s->tk->type != TOKEN_SYMBOL) {
-    error(s, "A tag must be a symbol");
+  acs |= type;
+  
+  switch (s->tk->data.string[1]) {
+    case 'S':
+      acs |= ACS_WIDTH_S;
+    break;
+    case 'D':
+      acs |= ACS_WIDTH_D;
+    break;
+    case 'Q':
+      acs |= ACS_WIDTH_Q;
+    break;
+    default:
+      error(s, "Invalid access specifier width");
+    break;
   }
   
-  char* element = s->tk->data;
-  for (size_t i = 0; i < strlen(element); i++) {
-    element[i] = tolower(element[i]);
-  }
+  uint32_t address;
+  bool get_offset = false;
   
-  if (!strcmp(element, "!nodoctype")) {
-    if (!s->put_doctype) {
-      s->put_doctype = true;
-      
-      consume(s);
-      if (s->tk->type != TOKEN_BLOCK_END) {
-        error(s, "Content and attributes are not allowed in a !nodoctype");
+  switch (s->tk->data.string[2]) {
+    case 'N':
+      acs |= ACS_OFFSET_N;
+    break;
+    case 'B':
+      acs |= ACS_OFFSET_B;
+      get_offset = true;
+    break;
+    case 'A':
+      if (type == ACS_TYPE_P) {
+        acs |= ACS_OFFSET_A;
+        get_offset = true;
+      } else {
+        error(s, "'After' offset can only be used by 'Pointer' type");
       }
-      return;
-    } else {
-      error(s, "A !nodoctype must be in the beggining of the file and cannot be called twice");
-    }
+    break;
+    default:
+      error(s, "Invalid access specifier offset type");
+    break;
   }
   
-  if (!s->put_doctype) {
-    fputs("<!doctype html>", s->file);
-    s->put_doctype = true;
-  }
-  
-  fprintf(s->file, "<%s", element);
+  write(s, &acs, 1);
   consume(s);
   
-  while (s->tk->type == TOKEN_KEYWORD) {
-    fprintf(s->file, " %s", s->tk->data);
-    consume(s);
-    
-    if (!(s->tk->type == TOKEN_STRING || s->tk->type == TOKEN_LITERAL)) {
-      error(s, "An attribute must be a string or literal");
+  address = get_number_or_label(s);
+  write(s, &address, 4);
+  
+  if (get_offset) {
+    if (allow_offset) {
+      parse_acs(s, false);
+    } else {
+      error(s, "Nested offsets are not allowed");
     }
-    
-    if (s->tk->data[0] != '\0') {
-      fprintf(s->file, "=\"%s\"", s->tk->data);
-    }
-    
-    consume(s);
+  }
+}
+
+static void parse_acs(prs_state* s, bool allow_offset) {
+  if (s->tk->type != TOKEN_SYMBOL) {
+    error(s, "Expected access specifier");
+  }
+  if (strlen(s->tk->data.string) > 3) {
+    error(s, "Invalid access specifier length");
   }
   
-  fputc('>', s->file);
+  uint8_t acs = 0;
   
-  if (needs_closing(element)) {
-    while (s->tk->type != TOKEN_BLOCK_END) {
-      switch (s->tk->type) {
-        case TOKEN_BLOCK_BEGIN:
-          recurse(s);
+  switch (s->tk->data.string[0]) {
+    case 'I':
+      acs |= ACS_TYPE_I;
+      
+      size_t width;
+      
+      switch (s->tk->data.string[1]) {
+        case 'S':
+          acs |= ACS_WIDTH_S;
+          width = 1;
         break;
-        case TOKEN_STRING:
-        case TOKEN_LITERAL:
-          fputs(s->tk->data, s->file);
+        case 'D':
+          acs |= ACS_WIDTH_D;
+          width = 2;
+        break;
+        case 'Q':
+          acs |= ACS_WIDTH_Q;
+          width = 4;
         break;
         default:
-          error(s, "Content must be other elements, strings or literals");
+          error(s, "Invalid access specifier width");
+        break;
+      }
+      write(s, &acs, 1);
+      consume(s);
+      
+      uint32_t integer = get_number_or_label(s);
+      write(s, &integer, width);
+    break;
+    case 'R':
+      acs |= ACS_TYPE_R;
+      
+      switch (s->tk->data.string[1]) {
+        case 'A':
+          acs |= ACS_REG_A;
+        break;
+        case 'B':
+          acs |= ACS_REG_B;
+        break;
+        case 'C':
+          acs |= ACS_REG_C;
+        break;
+        case 'S':
+          acs |= ACS_REG_S;
+        break;
+        default:
+          error(s, "Invalid access specifier register");
         break;
       }
       
+      switch (s->tk->data.string[2]) {
+        case 'S':
+          acs |= ACS_WIDTH_S;
+        break;
+        case 'D':
+          acs |= ACS_WIDTH_D;
+        break;
+        case 'Q':
+          acs |= ACS_WIDTH_Q;
+        break;
+        default:
+          error(s, "Invalid access specifier width");
+        break;
+      }
+      
+      write(s, &acs, 1);
       consume(s);
-    }
-    
-    fprintf(s->file, "</%s>", element);
-  } else {
-    if (s->tk->type != TOKEN_BLOCK_END) {
-      error(s, "Content is not allowed in void elements");
-    }
+    break;
+    case 'A':
+      parse_acs_ap(s, ACS_TYPE_A, allow_offset);
+    break;
+    case 'P':
+      parse_acs_ap(s, ACS_TYPE_P, allow_offset);
+    break;
+    default:
+      error(s, "Invalid access specifier type");
+    break;
   }
 }
 
 void parse(prs_state* s) {
-  while (s->tk->type != TOKEN_EOF) {
-    recurse(s);
-    consume(s);
+  while (true) {
+    switch (s->tk->type) {
+      case TOKEN_SYMBOL:
+        uint8_t inst = string_to_inst(s, s->tk->data.string);
+        write(s, &inst, 1);
+        
+        consume(s);
+        // make this check for argument count
+        while (s->tk->type != TOKEN_STATEMENT_END) {
+          parse_acs(s, true);
+        }
+        consume(s);
+      break;
+      case TOKEN_LABEL:
+        sc_add(s->global_table, s->tk->data.string, s->current_address);
+        consume(s);
+        
+        sc_free(s->local_table);
+        s->local_table = sc_alloc();
+        
+        if (s->tk->type != TOKEN_STATEMENT_END) {
+          error(s, "Labels must be followed by a newline");
+        }
+        consume(s);
+      break;
+      case TOKEN_LOCAL_LABEL:
+        sc_add(s->local_table, s->tk->data.string, s->current_address);
+        consume(s);
+        
+        if (s->tk->type != TOKEN_STATEMENT_END) {
+          error(s, "Labels must be followed by a newline");
+        }
+        consume(s);
+      break;
+      case TOKEN_DIRECTIVE:
+        if (!strcmp("data", s->tk->data.string)) {
+          consume(s);
+          
+          while (s->tk->type != TOKEN_STATEMENT_END) {
+            switch (s->tk->type) {
+              case TOKEN_NUMBER:
+                write(s, &s->tk->data.integer, 1);
+              break;
+              case TOKEN_STRING:
+                write(s, s->tk->data.string, strlen(s->tk->data.string));
+              break;
+              default:
+                error(s, "Expected integer or string");
+              break;
+            }
+            consume(s);
+          }
+          consume(s);
+        } else if (!strcmp("at", s->tk->data.string)) {
+          consume(s);
+          
+          if (s->tk->type != TOKEN_NUMBER) {
+            error(s, "Expected integer");
+          }
+          s->current_address = s->tk->data.integer;
+          consume(s);
+          
+          if (s->tk->type != TOKEN_STATEMENT_END) {
+            error(s, "Too many arguments for .at");
+          }
+          consume(s);
+        } else {
+          error(s, "Invalid directive");
+        }
+      break;
+      case TOKEN_EOF:
+        goto break_loop;
+      break;
+      default:
+        error(s, "Expected instruction, label definition, or directive.");
+      break;
+    }
   }
+  break_loop:
 }
-*/

@@ -54,12 +54,16 @@ SUB <op1> <op2> <dst>
 MUL <op1> <op2> <dst>
 DIV <op1> <op2> <dst>
 
-OR <cp1> <cp2> <dst>
-NOR <cp1> <cp2> <dst>
-AND <cp1> <cp2> <dst>
-NAND <cp1> <cp2> <dst>
-XOR <cp1> <cp2> <dst>
-XNOR <cp1> <cp2> <dst>
+OR <op1> <op2> <dst>
+NOR <op1> <op2> <dst>
+AND <op1> <op2> <dst>
+NAND <op1> <op2> <dst>
+XOR <op1> <op2> <dst>
+XNOR <op1> <op2> <dst>
+SHL <op1> <op2> <dst>
+SHR  <op1> <op2> <dst>
+ROL <op1> <op2> <dst>
+ROR  <op1> <op2> <dst>
 
 Memory areas:
 0x00000000 - 0x000000ff - Processor and system control
@@ -69,5 +73,4 @@ Memory areas:
 
 0x00000900 - 0x00000fff - System I/O
   0x00000900 - Print out
-0x00001000 - 0x00001fff - ROM
-0x00002000 - 0x000020ff - Temporary RAM
+0x00001000 - ROM
