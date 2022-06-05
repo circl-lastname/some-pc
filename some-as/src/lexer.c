@@ -280,7 +280,9 @@ void lex(lex_state* s) {
         put_token(s, TOKEN_STRING, TYPE_STRING, &data);
       break;
       case '\n':
+        set_token_cur(s);
         consume(s);
+        
         if (s->statement_end_status == 0) {
           put_token(s, TOKEN_STATEMENT_END, TYPE_NONE, &data);
         }

@@ -7,6 +7,8 @@ typedef struct {
   lex_token* tk;
   long current_token;
   
+  int pass;
+  
   uint32_t current_address;
   sc_table* global_table;
   sc_table* local_table;

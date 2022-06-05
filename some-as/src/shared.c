@@ -33,12 +33,13 @@ sc_table* sc_alloc() {
   return table;
 }
 
-void sc_add(sc_table* table, char* string, uint32_t value) {
+void sc_add(sc_table* table, char* string, uint32_t value, sc_table* local_table) {
   sc_entry* entry = &table->entries[table->amount];
   
   entry->string = try(malloc(strlen(string)+1));
   strcpy(entry->string, string);
   entry->value = value;
+  entry->local_table = local_table;
   
   table->amount++;
   
@@ -48,11 +49,11 @@ void sc_add(sc_table* table, char* string, uint32_t value) {
   }
 }
 
-uint32_t* sc_get(sc_table* table, char* string) {
+sc_entry* sc_get(sc_table* table, char* string) {
   for (long i = 0; i < table->amount; i++) {
     // ew
     if (!strcmp(string, table->entries[i].string)) {
-      return &table->entries[i].value;
+      return &table->entries[i];
     }
   }
   return NULL;
@@ -61,6 +62,9 @@ uint32_t* sc_get(sc_table* table, char* string) {
 void sc_free(sc_table* table) {
   for (long i = 0; i < table->amount; i++) {
     free(table->entries[i].string);
+    if (table->entries[i].local_table) {
+      sc_free(table->entries[i].local_table);
+    }
   }
   free(table->entries);
   free(table);

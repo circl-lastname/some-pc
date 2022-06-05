@@ -12,6 +12,9 @@ Options:
   $0
     Configure normally
 
+  $0 --debug
+    Configure for debugging
+
 Enviornment variables:
   CC
     Change C compiler (from gcc)
@@ -80,6 +83,10 @@ if [ "$1" = "--help" ]; then
   usage
   exit
 elif [ -z "$1" ]; then
+  generate_ninja
+elif [ "$1" = "--debug" ]; then
+  CFLAGS="-O2 -I../lib -D DEBUG -g"
+  LDFLAGS=" "
   generate_ninja
 else
   usage

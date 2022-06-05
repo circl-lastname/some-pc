@@ -20,10 +20,13 @@ static void consume(prs_state* s) {
 }
 
 static void write(prs_state* s, void* data, size_t size) {
-  if (!fwrite(data, size, 1, s->file)) {
-    perror("some-as");
-    exit(1);
+  if (s->pass == 1) {
+    if (!fwrite(data, size, 1, s->file)) {
+      perror("some-as");
+      exit(1);
+    }
   }
+  
   s->current_address += size;
 }
 
@@ -32,14 +35,26 @@ static uint32_t get_number_or_label(prs_state* s) {
   
   switch (s->tk->type) {
     case TOKEN_SYMBOL:
-      uint32_t* temp_value = sc_get(s->local_table, s->tk->data.string);
-      if (!temp_value) {
-        temp_value = sc_get(s->global_table, s->tk->data.string);
-        if (!temp_value) {
-          error(s, "Unknown label");
+      if (s->pass == 0) {
+        value = 0;
+      } else if (s->pass == 1) {
+        sc_entry* entry;
+        
+        if (s->local_table) {
+          entry = sc_get(s->local_table, s->tk->data.string);
+        } else {
+          entry = NULL;
         }
+        
+        if (!entry) {
+          entry = sc_get(s->global_table, s->tk->data.string);
+          
+          if (!entry) {
+            error(s, "Unknown label");
+          }
+        }
+        value = entry->value;
       }
-      value = *temp_value;
     break;
     case TOKEN_NUMBER:
       value = s->tk->data.integer;
@@ -53,16 +68,27 @@ static uint32_t get_number_or_label(prs_state* s) {
   return value;
 }
 
-static uint8_t string_to_inst(prs_state* s, char* inst) {
+static uint8_t get_inst(prs_state* s) {
   // ew
   #define F(n, a, c) \
-    if (!strcmp(inst, #n)) { \
+    if (!strcmp(s->tk->data.string, #n)) { \
+      consume(s); \
       return c; \
     } else
   ENUMERATE_INSTS(F)
   #undef F
   {
     error(s, "Invalid instruction");
+  }
+}
+
+static int num_of_args(uint8_t inst) {
+  switch (inst) {
+    #define F(n, a, c) \
+      case c: \
+        return a;
+    ENUMERATE_INSTS(F)
+    #undef F
   }
 }
 
@@ -221,22 +247,33 @@ void parse(prs_state* s) {
   while (true) {
     switch (s->tk->type) {
       case TOKEN_SYMBOL:
-        uint8_t inst = string_to_inst(s, s->tk->data.string);
+        uint8_t inst = get_inst(s);
+        int args = num_of_args(inst);
+        
         write(s, &inst, 1);
         
-        consume(s);
-        // make this check for argument count
-        while (s->tk->type != TOKEN_STATEMENT_END) {
+        for (int i = 0; i < args; i++) {
           parse_acs(s, true);
+        }
+        
+        if (s->tk->type != TOKEN_STATEMENT_END) {
+          error(s, "Too many arguments for instruction");
         }
         consume(s);
       break;
       case TOKEN_LABEL:
-        sc_add(s->global_table, s->tk->data.string, s->current_address);
+        sc_table* local_table;
+        
+        if (s->pass == 0) {
+          local_table = sc_alloc();
+          sc_add(s->global_table, s->tk->data.string, s->current_address, local_table);
+        } else if (s->pass == 1) {
+          local_table = sc_get(s->global_table, s->tk->data.string)->local_table;
+        }
+        
         consume(s);
         
-        sc_free(s->local_table);
-        s->local_table = sc_alloc();
+        s->local_table = local_table;
         
         if (s->tk->type != TOKEN_STATEMENT_END) {
           error(s, "Labels must be followed by a newline");
@@ -244,7 +281,14 @@ void parse(prs_state* s) {
         consume(s);
       break;
       case TOKEN_LOCAL_LABEL:
-        sc_add(s->local_table, s->tk->data.string, s->current_address);
+        if (s->pass == 0) {
+          if (s->local_table) {
+            sc_add(s->local_table, s->tk->data.string, s->current_address, NULL);
+          } else {
+            error(s, "Local labels must be below a global label");
+          }
+        }
+        
         consume(s);
         
         if (s->tk->type != TOKEN_STATEMENT_END) {
@@ -258,17 +302,22 @@ void parse(prs_state* s) {
           
           while (s->tk->type != TOKEN_STATEMENT_END) {
             switch (s->tk->type) {
+              case TOKEN_SYMBOL:
+                uint32_t integer = get_number_or_label(s);
+                write(s, &integer, 4);
+              break;
               case TOKEN_NUMBER:
                 write(s, &s->tk->data.integer, 1);
+                consume(s);
               break;
               case TOKEN_STRING:
                 write(s, s->tk->data.string, strlen(s->tk->data.string));
+                consume(s);
               break;
               default:
                 error(s, "Expected integer or string");
               break;
             }
-            consume(s);
           }
           consume(s);
         } else if (!strcmp("at", s->tk->data.string)) {

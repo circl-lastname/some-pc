@@ -46,12 +46,23 @@ void main(int argc, char** argv) {
   prss.filename_in = argv[1];
   prss.tk = &lexs.tokens[0];
   prss.current_token = 0;
+  prss.pass = 0;
   prss.current_address = 0x1000;
   prss.global_table = sc_alloc();
-  prss.local_table = sc_alloc();
+  prss.local_table = NULL;
   prss.tokens_amount = lexs.tokens_amount;
   prss.tokens = lexs.tokens;
   
+  // pass 0
+  parse(&prss);
+  
+  prss.tk = &lexs.tokens[0];
+  prss.current_token = 0;
+  prss.pass = 1;
+  prss.current_address = 0x1000;
+  prss.local_table = NULL;
+  
+  // pass 1
   parse(&prss);
   
   fclose(file_in);
@@ -66,5 +77,4 @@ void main(int argc, char** argv) {
   free(lexs.tokens);
   
   sc_free(prss.global_table);
-  sc_free(prss.local_table);
 }
