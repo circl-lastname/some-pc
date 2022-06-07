@@ -29,9 +29,7 @@
   f(XOR,  3, 0x44) \
   f(XNOR, 3, 0x45) \
   f(SHL,  3, 0x46) \
-  f(SHR,  3, 0x47) \
-  f(ROL,  3, 0x48) \
-  f(ROR,  3, 0x49)
+  f(SHR,  3, 0x47)
 
 #define ACS_TYPE_I   0x00
 #define ACS_TYPE_R   0x01

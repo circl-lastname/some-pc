@@ -20,7 +20,7 @@ Enviornment variables:
     Change C compiler (from gcc)
 
   CFLAGS
-    Change compiler flags (from -O2 -I../include)
+    Change compiler flags (from -O2 -I../lib)
 
   LDFLAGS
     Change linker flags (from -s)
@@ -39,7 +39,7 @@ generate_ninja () {
   LDFLAGS=${LDFLAGS:-"-s"}
   DESTDIR=${DESTDIR:-"/usr/local/bin"}
   dir=${dir:-build}
-  target=${target:-some-as}
+  target=${target:-some-emu}
   
 cat << EOF >> build.ninja
 rule cc

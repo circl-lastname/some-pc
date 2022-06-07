@@ -62,8 +62,6 @@ XOR <op1> <op2> <dst>
 XNOR <op1> <op2> <dst>
 SHL <op1> <op2> <dst>
 SHR  <op1> <op2> <dst>
-ROL <op1> <op2> <dst>
-ROR  <op1> <op2> <dst>
 
 Memory areas:
 0x00000000 - 0x000000ff - Processor and system control
@@ -72,5 +70,6 @@ Memory areas:
 0x00000500 - 0x000008ff - Interrupt table
 
 0x00000900 - 0x00000fff - System I/O
-  0x00000900 - Print out
+  0x00000900 - Set power state
+  0x00000901 - Print out
 0x00001000 - ROM
