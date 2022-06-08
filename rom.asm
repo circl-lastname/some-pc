@@ -5,12 +5,25 @@ sys_power:
 .at 0x901
 sys_print:
 
+.at 0x902
+sys_hd0_size:
+
+.at 0x906
+sys_hd0_target:
+
+.at 0x90b
+sys_hd0_ctl:
+
+.at 0xa00
+sys_hd0_block:
+
 ; Main code
 .at 0x1000
 
 main:
   MOV IQ .s_welcome RAQ
   CALL IQ put_string
+  
   
   MOV IQ .s_check_memory RAQ
   CALL IQ put_string
@@ -23,6 +36,29 @@ main:
   MOV IS 0x0a RAS
   CALL IQ put_char
   
+  
+  MOV IQ .s_hd_size RAQ
+  CALL IQ put_string
+  
+  MUL AQN sys_hd0_size IQ 512 RAQ
+  CALL IQ put_dec_num
+  
+  MOV IS 0x0a RAS
+  CALL IQ put_char
+  
+  
+  MOV IQ 0 AQN sys_hd0_target
+  MOV IQ 1 AQN sys_hd0_ctl
+  
+  MOV IQ sys_hd0_block RAQ
+  MOV IQ 0x2000 RBQ
+  MOV IQ 512 RCQ
+  CALL IQ memcpy
+  
+  
+  CALL IQ 0x2000
+  
+  
   JMP IQ halt
   
   .s_welcome:
@@ -32,6 +68,10 @@ main:
   
   .s_check_memory:
   .data "Checking amount of memory... "
+  .data 0
+  
+  .s_hd_size:
+  .data "Size of HD0 is "
   .data 0
 
 check_memory:
@@ -56,6 +96,22 @@ halt:
   ; Failsafe
   .loop:
   JMP IQ .loop
+
+memcpy:
+  MOV RAQ AQN .temp_1
+  MOV RBQ AQN .temp_2
+  
+  .loop:
+  MOV PSA .temp_1 RCQ PSA .temp_2 RCQ
+  SUB RCQ IQ 1 RCQ
+  JNE RCQ IQ 0xffffffff IQ .loop
+  
+  RET
+  
+  .temp_1:
+  .data 0 0 0 0
+  .temp_2:
+  .data 0 0 0 0
 
 put_char:
   MOV RAS ASN sys_print

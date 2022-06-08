@@ -72,4 +72,8 @@ Memory areas:
 0x00000900 - 0x00000fff - System I/O
   0x00000900 - Set power state
   0x00000901 - Print out
+  0x00000902 - Size of HD0
+  0x00000906 - Which block to affect
+  0x0000090b - Load or save block
+  0x00000a00 - Loaded block
 0x00001000 - ROM

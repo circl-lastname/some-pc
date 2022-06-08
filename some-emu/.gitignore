@@ -3,5 +3,6 @@ build.ninja
 .ninja_log
 some-emu
 test.asm
+test
 rom
 disk

@@ -1,3 +1,4 @@
+extern uint32_t hd0_size;
 extern int hd0_fd;
 
 void write_mem_s(uint32_t address, uint8_t value);
