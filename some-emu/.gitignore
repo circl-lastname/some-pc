@@ -4,3 +4,4 @@ build.ninja
 some-emu
 test.asm
 rom
+disk

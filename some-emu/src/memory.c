@@ -1,18 +1,25 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "config.h"
 
 uint8_t memory[MEMORY_SIZE];
 
+int hd0_fd;
+
 void write_mem_s(uint32_t address, uint8_t value) {
-  if (address == 0x900) {
-    if (value == 1) {
-      exit(0);
-    }
-  } else if (address == 0x901) {
-    putchar(value);
+  switch (address) {
+    case 0x900:
+      if (value == 1) {
+        exit(0);
+      }
+    break;
+    case 0x901:
+      putchar(value);
+      fflush(stdout);
+    break;
   }
   
   if (address >= MEMORY_SIZE) {
@@ -23,6 +30,12 @@ void write_mem_s(uint32_t address, uint8_t value) {
 }
 
 uint8_t read_mem_s(uint32_t address) {
+  switch (address) {
+    case 0x902:
+        
+    break;
+  }
+  
   if (address >= MEMORY_SIZE) {
     return 0;
   } else {

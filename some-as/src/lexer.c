@@ -83,8 +83,6 @@ static void skip_until_newline(lex_state* s) {
     consume(s);
   }
   break_loop:
-  
-  consume(s);
 }
 
 static char* get_until_disallowed(lex_state* s) {
@@ -240,6 +238,7 @@ void lex(lex_state* s) {
     switch (s->ch) {
       case ';':
         skip_until_newline(s);
+        s->statement_end_status++;
       break;
       case '.':
         set_token_cur(s);

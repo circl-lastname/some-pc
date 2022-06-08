@@ -35,7 +35,7 @@ generate_ninja () {
   touch build.ninja
   
   CC=${CC:-gcc}
-  CFLAGS=${CFLAGS:-"-O2 -I../include"}
+  CFLAGS=${CFLAGS:-"-O3 -I../include"}
   LDFLAGS=${LDFLAGS:-"-s"}
   DESTDIR=${DESTDIR:-"/usr/local/bin"}
   dir=${dir:-build}
@@ -50,6 +50,10 @@ rule cc
 rule ld
   command = $CC $LDFLAGS \$in -o \$out
   description = LD \$out
+
+rule some-as
+  command = some-as \$in \$out
+  description = SOME-AS \$out
 
 rule install
   command = cp \$in \$out
@@ -76,6 +80,8 @@ cat << EOF >> build.ninja
 build $DESTDIR/$target: install $target
 build install: phony $DESTDIR/$target
 default $target
+
+build rom: some-as ../rom.asm
 EOF
 }
 
@@ -85,7 +91,7 @@ if [ "$1" = "--help" ]; then
 elif [ -z "$1" ]; then
   generate_ninja
 elif [ "$1" = "--debug" ]; then
-  CFLAGS="-O2 -I../include -D DEBUG -g"
+  CFLAGS="-O3 -I../include -D DEBUG -g"
   LDFLAGS=" "
   generate_ninja
 else

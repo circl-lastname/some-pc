@@ -15,17 +15,12 @@ enum {
   #undef F
 };
 
-uint32_t pc = 0x100;
+uint32_t pc;
 
 uint32_t reg_a;
 uint32_t reg_b;
 uint32_t reg_c;
-uint32_t reg_s;
-
-static void error(char* string) {
-  fprintf(stderr, "%s (PC=%"PRIu32")\n", string, pc);
-  exit(1);
-}
+uint32_t reg_s = 0x100;
 
 void cpu_loop() {
   // load program counter with initial value
