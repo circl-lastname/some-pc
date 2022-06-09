@@ -33,8 +33,8 @@ main:
   MOV AQN g_memory RAQ
   CALL IQ put_dec_num
   
-  MOV IS 0x0a RAS
-  CALL IQ put_char
+  MOV IQ .s_bytes RAQ
+  CALL IQ put_string
   
   
   MOV IQ .s_hd_size RAQ
@@ -43,8 +43,8 @@ main:
   MUL AQN sys_hd0_size IQ 512 RAQ
   CALL IQ put_dec_num
   
-  MOV IS 0x0a RAS
-  CALL IQ put_char
+  MOV IQ .s_bytes RAQ
+  CALL IQ put_string
   
   
   MOV IQ 0 AQN sys_hd0_target
@@ -71,7 +71,11 @@ main:
   .data 0
   
   .s_hd_size:
-  .data "Size of HD0 is "
+  .data "Size of disk is "
+  .data 0
+  
+  .s_bytes:
+  .data " bytes" 0x0a
   .data 0
 
 check_memory:
@@ -100,11 +104,14 @@ halt:
 memcpy:
   MOV RAQ AQN .temp_1
   MOV RBQ AQN .temp_2
+  SUB RCQ IQ 1 RCQ
   
   .loop:
+  JEQ RCQ IQ 0xffffffff IQ .end_loop
   MOV PSA .temp_1 RCQ PSA .temp_2 RCQ
   SUB RCQ IQ 1 RCQ
-  JNE RCQ IQ 0xffffffff IQ .loop
+  JMP IQ .loop
+  .end_loop:
   
   RET
   

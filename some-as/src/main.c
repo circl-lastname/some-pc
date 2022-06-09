@@ -6,16 +6,22 @@
 #include "shared.h"
 #include "lexer.h"
 #include "parser.h"
+#include "export.h"
 #include "debug.h"
 
 void main(int argc, char** argv) {
-  if (argc != 3) {
-    puts("usage: some-as <input> <output>");
+  if (!(argc == 3 || argc == 4)) {
+    puts("usage: some-as <input-asm> <output-binary> [label-export]");
     exit(1);
   }
   
   FILE* file_in = try(fopen(argv[1], "rb"));
   FILE* file_out = try(fopen(argv[2], "wb"));
+  
+  FILE* file_export;
+  if (argv[3]) {
+    file_export = try(fopen(argv[3], "wb"));
+  }
   
   lex_state lexs;
   
@@ -65,8 +71,15 @@ void main(int argc, char** argv) {
   // pass 1
   parse(&prss);
   
+  if (argv[3]) {
+    export_labels(&prss, file_export);
+  }
+  
   fclose(file_in);
   fclose(file_out);
+  if (argv[3]) {
+    fclose(file_export);
+  }
   
   for (long i = 0; i < lexs.tokens_amount; i++) {
     if (lexs.tokens[i].data_type == TYPE_STRING) {
