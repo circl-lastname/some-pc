@@ -1,21 +1,44 @@
 ; Constant addresses
-.at 0x900
+.at 0x8
+sys_memory:
+
+.at 0xc
 sys_power:
 
-.at 0x901
+.at 0x900
 sys_print:
 
-.at 0x902
+.at 0x901
 sys_hd0_size:
 
-.at 0x906
+.at 0x905
 sys_hd0_target:
 
-.at 0x90b
+.at 0x909
 sys_hd0_ctl:
 
 .at 0xa00
 sys_hd0_block:
+
+
+.at 0x1f00
+export_halt:
+
+.at 0x1f04
+export_memcpy:
+
+.at 0x1f08
+export_put_char:
+
+.at 0x1f0c
+export_put_string:
+
+.at 0x1f10
+export_put_dec_num:
+
+.at 0x2000
+bootloader:
+
 
 ; Main code
 .at 0x1000
@@ -25,71 +48,74 @@ main:
   CALL IQ put_string
   
   
-  MOV IQ .s_check_memory RAQ
-  CALL IQ put_string
-  
-  CALL IQ check_memory
-  
-  MOV AQN g_memory RAQ
+  MOV AQN sys_memory RAQ
   CALL IQ put_dec_num
   
-  MOV IQ .s_bytes RAQ
+  MOV IQ .s_memory RAQ
   CALL IQ put_string
   
   
   MOV IQ .s_hd_size RAQ
   CALL IQ put_string
   
-  MUL AQN sys_hd0_size IQ 512 RAQ
+  DIV AQN sys_hd0_size IQ 2 RAQ
   CALL IQ put_dec_num
   
-  MOV IQ .s_bytes RAQ
+  MOV IQ .s_kb RAQ
   CALL IQ put_string
   
   
-  MOV IQ 0 AQN sys_hd0_target
-  MOV IQ 1 AQN sys_hd0_ctl
+  MOV IQ .s_booting RAQ
+  CALL IQ put_string
   
-  MOV IQ sys_hd0_block RAQ
-  MOV IQ 0x2000 RBQ
-  MOV IQ 512 RCQ
-  CALL IQ memcpy
+  CALL IQ load_bootloader
   
   
-  CALL IQ 0x2000
+  MOV IQ halt AQN export_halt
+  MOV IQ memcpy AQN export_memcpy
+  MOV IQ put_char AQN export_put_char
+  MOV IQ put_string AQN export_put_string
+  MOV IQ put_dec_num AQN export_put_dec_num
   
+  JMP IQ bootloader
   
-  JMP IQ halt
   
   .s_welcome:
   .data "SomePC Firmware" 0x0a
   .data 0x0a
   .data 0
   
-  .s_check_memory:
-  .data "Checking amount of memory... "
+  .s_memory:
+  .data " bytes of memory" 0x0a
   .data 0
   
   .s_hd_size:
   .data "Size of disk is "
   .data 0
   
-  .s_bytes:
-  .data " bytes" 0x0a
+  .s_kb:
+  .data " KB" 0x0a
+  .data 0
+  
+  .s_booting:
+  .data "Booting..." 0x0a
   .data 0
 
-check_memory:
+load_bootloader:
   PUSH RAQ
-  MOV IQ m_end_of_rom RAQ
-  JMP IQ .loop_entry
+  PUSH RBQ
+  PUSH RCQ
+  
+  MOV IQ 2 sys_hd0_target
+  MOV IQ 1 sys_hd0_ctl
+  
+  MOV IQ 0x20 RAQ 
   
   .loop:
-  ADD RAQ IQ 1 RAQ
-  .loop_entry:
-  MOV IS 0xff ASB 0 RAQ
-  JEQ ASB 0 RAQ IS 0xff IQ .loop
   
-  MOV RAQ AQN .g_memory
+  
+  POP RCQ
+  POP RBQ
   POP RAQ
   RET
 
@@ -113,6 +139,33 @@ memcpy:
   JMP IQ .loop
   .end_loop:
   
+  RET
+  
+  .temp_1:
+  .data 0 0 0 0
+  .temp_2:
+  .data 0 0 0 0
+
+strcmp:
+  PUSH RCQ
+  MOV IQ 0 RCQ
+  MOV RAQ AQN .temp_1
+  MOV RBQ AQN .temp_2
+  
+  .loop:
+  JNE PSA .temp_1 RCQ PSA .temp_2 RCQ IQ .return_0
+  JEQ PSA .temp_1 RCQ IQ 0 IQ .return_1
+  ADD RCQ IQ 1 RCQ
+  JMP IQ .loop
+  
+  .return_0:
+  MOV IQ 0 RAQ
+  POP RCQ
+  RET
+  
+  .return_1:
+  MOV IQ 1 RAQ
+  POP RCQ
   RET
   
   .temp_1:
@@ -183,10 +236,3 @@ put_dec_num:
   
   .printing:
   .data 0
-
-; Global variables
-g_memory:
-  .data 0 0 0 0
-
-; End of rom marker
-m_end_of_rom:

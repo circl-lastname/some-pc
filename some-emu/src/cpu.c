@@ -2,9 +2,11 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include <isa.h>
 
+#include "config.h"
 #include "memory.h"
 #include "acs.h"
 
@@ -301,5 +303,9 @@ void cpu_loop() {
         write_acs(target, value);
       break;
     }
+    
+    #ifdef WAIT
+      usleep(WAIT);
+    #endif
   }
 }

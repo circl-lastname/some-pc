@@ -52,7 +52,7 @@ rule ld
   description = LD \$out
 
 rule some-as
-  command = some-as \$in \$out \$out.sym
+  command = some-as \$in \$out
   description = SOME-AS \$out
 
 rule install
@@ -81,7 +81,7 @@ build $DESTDIR/$target: install $target
 build install: phony $DESTDIR/$target
 default $target
 
-build rom | rom.sym: some-as ../rom.asm
+build rom: some-as ../rom.asm
 EOF
 }
 

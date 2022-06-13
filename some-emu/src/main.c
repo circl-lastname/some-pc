@@ -26,6 +26,7 @@ void main(int argc, char** argv) {
   fclose(rom);
   
   write_mem_q(0x4, 0x1000);
+  write_mem_q(0x8, MEMORY_SIZE);
   
   struct stat hd0_stat;
   if (stat(HD0_FILE, &hd0_stat) == -1) {

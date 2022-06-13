@@ -64,16 +64,18 @@ SHL <op1> <op2> <dst>
 SHR  <op1> <op2> <dst>
 
 Memory areas:
-0x00000000 - 0x000000ff - Processor and system control
+0x00000000 - 0x000000ff - Processor control
   0x00000004 - Initial PC address
+  0x00000008 - Memory amount in bytes
+  0x0000000c - Set power state
 0x00000100 - 0x000004ff - Stack
 0x00000500 - 0x000008ff - Interrupt table
 
 0x00000900 - 0x00000fff - System I/O
-  0x00000900 - Set power state
-  0x00000901 - Print out
-  0x00000902 - Size of HD0
-  0x00000906 - Which block to affect
-  0x0000090b - Load or save block
-  0x00000a00 - Loaded block
+  0x00000900 - Print out
+  
+  0x00000901 - Size of HD0 in blocks
+  0x00000905 - Which block to affect
+  0x00000909 - Load (1) or save (2) block
+  0x00000a00 - Block buffer
 0x00001000 - ROM
