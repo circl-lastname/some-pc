@@ -51,10 +51,6 @@ rule ld
   command = $CC $LDFLAGS \$in -o \$out
   description = LD \$out
 
-rule some-as
-  command = some-as \$in \$out
-  description = SOME-AS \$out
-
 rule install
   command = cp \$in \$out
   description = INSTALL \$out
@@ -80,8 +76,6 @@ cat << EOF >> build.ninja
 build $DESTDIR/$target: install $target
 build install: phony $DESTDIR/$target
 default $target
-
-build rom: some-as ../rom.asm
 EOF
 }
 

@@ -4,6 +4,3 @@ build.ninja
 some-emu
 test.asm
 test
-rom
-rom.sym
-disk
