@@ -28,13 +28,19 @@ export_halt:
 export_memcpy:
 
 .at 0x1f08
-export_put_char:
+export_strcmp:
 
 .at 0x1f0c
-export_put_string:
+export_putc:
 
 .at 0x1f10
-export_put_dec_num:
+export_puts:
+
+.at 0x1f14
+export_putdec:
+
+.at 0x1f18
+export_fs_load_file:
 
 .at 0x2000
 bootloader:
@@ -45,43 +51,51 @@ bootloader:
 
 main:
   MOV IQ .s_welcome RAQ
-  CALL IQ put_string
+  CALL IQ puts
   
   
   MOV AQN sys_memory RAQ
-  CALL IQ put_dec_num
+  CALL IQ putdec
   
   MOV IQ .s_memory RAQ
-  CALL IQ put_string
+  CALL IQ puts
   
   
   MOV IQ .s_hd_size RAQ
-  CALL IQ put_string
+  CALL IQ puts
   
   DIV AQN sys_hd0_size IQ 2 RAQ
-  CALL IQ put_dec_num
+  CALL IQ putdec
   
   MOV IQ .s_kb RAQ
-  CALL IQ put_string
+  CALL IQ puts
   
   
   MOV IQ .s_booting RAQ
-  CALL IQ put_string
+  CALL IQ puts
   
-  CALL IQ load_bootloader
-  
+  MOV IQ 1 RAQ
+  MOV IQ .s_someboot RBQ
+  CALL IQ fs_read_dir
+  MOV IQ .s_payload RBQ
+  CALL IQ fs_read_dir
+  MOV IQ bootloader RBQ
+  CALL IQ fs_load_file
   
   MOV IQ halt AQN export_halt
   MOV IQ memcpy AQN export_memcpy
-  MOV IQ put_char AQN export_put_char
-  MOV IQ put_string AQN export_put_string
-  MOV IQ put_dec_num AQN export_put_dec_num
+  MOV IQ strcmp AQN export_strcmp
+  MOV IQ putc AQN export_putc
+  MOV IQ puts AQN export_puts
+  MOV IQ putdec AQN export_putdec
+  MOV IQ fs_load_file AQN export_fs_load_file
   
   JMP IQ bootloader
   
   
   .s_welcome:
   .data "SomePC Firmware" 0x0a
+  .data "Features: Serial, Disk, SomeFS" 0x0a
   .data 0x0a
   .data 0
   
@@ -94,30 +108,18 @@ main:
   .data 0
   
   .s_kb:
-  .data " KB" 0x0a
+  .data " KiB" 0x0a
   .data 0
   
   .s_booting:
   .data "Booting..." 0x0a
   .data 0
-
-load_bootloader:
-  PUSH RAQ
-  PUSH RBQ
-  PUSH RCQ
   
-  MOV IQ 2 sys_hd0_target
-  MOV IQ 1 sys_hd0_ctl
+  .s_someboot:
+  .data "someboot" 0
   
-  MOV IQ 0x20 RAQ 
-  
-  .loop:
-  
-  
-  POP RCQ
-  POP RBQ
-  POP RAQ
-  RET
+  .s_payload:
+  .data "payload" 0
 
 ; Helper functions
 halt:
@@ -173,24 +175,24 @@ strcmp:
   .temp_2:
   .data 0 0 0 0
 
-put_char:
+putc:
   MOV RAS ASN sys_print
   RET
 
-put_string:
+puts:
   PUSH RCQ
   MOV RAQ RCQ
   
   .loop:
   MOV ASB 0 RCQ RAS
-  CALL IQ put_char
+  CALL IQ putc
   ADD RCQ IQ 1 RCQ
   JNE ASB 0 RCQ IS 0 IQ .loop
   
   POP RCQ
   RET
 
-put_dec_num:
+putdec:
   ; RAQ - Number
   ; RBQ - Divider
   ; RCQ - Temp
@@ -203,29 +205,41 @@ put_dec_num:
   .loop:
   ; Determine digit in the place of divider
   DIV RAQ RBQ RCS
+  
   ; Check if printing digit
   JEQ ASN .printing IS 1 IQ .print
+  
   ; Else check if digit non-zero
   JNE RCS IS 0 IQ .print_and_set
+  
+  ; Else always print last digit
+  JEQ RBQ IQ 1 IQ .print
+  
   ; Otherwise skip printing
   JMP IQ .skip_printing
+  
   ; Set printing to 1
   .print_and_set:
   MOV IS 1 ASN .printing
+  
   ; Print digit
   .print:
   PUSH RAQ
   ADD RCS IS 0x30 RAS
-  CALL IQ put_char
+  CALL IQ putc
   POP RAQ
   .skip_printing:
+  
   ; Subtract digit from number
   MUL RBQ RCS RCQ
   SUB RAQ RCQ RAQ
+  
   ; End loop if divider is 1
   JEQ RBQ IQ 1 IQ .end_loop
+  
   ; Otherwise move divider one digit
   DIV RBQ IQ 10 RBQ
+  
   ; Loop
   JMP IQ .loop
   .end_loop:
@@ -236,3 +250,72 @@ put_dec_num:
   
   .printing:
   .data 0
+
+; FS functions
+fs_load_file:
+  ; RAQ - File block
+  ; RBQ - Destination
+  
+  PUSH RCQ
+  
+  MOV RAQ AQN sys_hd0_target
+  MOV IQ 1 AQN sys_hd0_ctl
+  
+  MOV IQ 0xa20 RAQ
+  
+  .loop:
+  MOV AQN 0xa05 RCQ
+  CALL IQ memcpy
+  
+  JEQ AQN 0xa01 IQ 0 IQ .end_loop
+  
+  ADD RBQ AQN 0xa05 RBQ
+  
+  MOV AQN 0xa01 AQN sys_hd0_target
+  MOV IQ 1 AQN sys_hd0_ctl
+  JMP IQ .loop
+  .end_loop:
+  
+  POP RCQ
+  RET
+
+fs_read_dir:
+  ; RAQ - Dir block
+  ; RBQ - Filename
+  
+  PUSH RCQ
+  MOV IQ 0xa40 RCQ
+  
+  MOV RAQ AQN sys_hd0_target
+  MOV IQ 1 AQN sys_hd0_ctl
+  
+  .loop:
+  JNE ASB 0x20 RCQ IS 0xff IQ .next_entry
+  
+  MOV RCQ RAQ
+  CALL IQ strcmp
+  
+  JEQ RAQ IQ 0 IQ .next_entry
+  
+  MOV AQB 0x22 RCQ RAQ
+  JMP IQ .end_loop
+  
+  .next_entry:
+  ADD RCQ IQ 0x40 RCQ
+  JEQ RCQ IQ 0xc00 IQ .next_block
+  JMP IQ .loop
+  
+  .next_block:
+  JEQ AQN 0xa01 IQ 0 IQ .not_found
+  
+  MOV AQN 0xa01 AQN sys_hd0_target
+  MOV IQ 1 AQN sys_hd0_ctl
+  
+  MOV IQ 0xa40 RCQ
+  JMP IQ .loop
+  .not_found:
+  MOV IQ 0 RAQ
+  .end_loop:
+  
+  POP RCQ
+  RET
