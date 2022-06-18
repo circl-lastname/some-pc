@@ -20,7 +20,7 @@ Enviornment variables:
     Change C compiler (from gcc)
 
   CFLAGS
-    Change compiler flags (from -O3 -I../include)
+    Change compiler flags (from -O2 -I../include)
 
   LDFLAGS
     Change linker flags (from -s)
@@ -35,11 +35,11 @@ generate_ninja () {
   touch build.ninja
   
   CC=${CC:-gcc}
-  CFLAGS=${CFLAGS:-"-O3 -I../include"}
+  CFLAGS=${CFLAGS:-"-O2 -I../include"}
   LDFLAGS=${LDFLAGS:-"-s"}
   DESTDIR=${DESTDIR:-"/usr/local/bin"}
   dir=${dir:-build}
-  target=${target:-some-emu}
+  target=${target:-some-genfs}
   
 cat << EOF >> build.ninja
 rule cc
@@ -85,7 +85,7 @@ if [ "$1" = "--help" ]; then
 elif [ -z "$1" ]; then
   generate_ninja
 elif [ "$1" = "--debug" ]; then
-  CFLAGS="-O3 -I../include -D DEBUG -g"
+  CFLAGS="-O2 -I../include -D DEBUG -g"
   LDFLAGS=" "
   generate_ninja
 else

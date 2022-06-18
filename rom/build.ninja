@@ -1,10 +1,10 @@
 rule some-as
-  command = some-as \$in \$out
-  description = SOME-AS \$out
+  command = some-as $in $out
+  description = SOME-AS $out
 
 rule install
-  command = cp \$in \$out
-  description = INSTALL \$out
+  command = cp $in $out
+  description = INSTALL $out
 
 build rom: some-as rom.asm
 build ../testing/rom: install rom

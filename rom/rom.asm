@@ -42,6 +42,9 @@ export_putdec:
 .at 0x1f18
 export_fs_load_file:
 
+.at 0x1f1c
+export_fs_read_dir:
+
 .at 0x2000
 bootloader:
 
@@ -74,7 +77,10 @@ main:
   MOV IQ .s_booting RAQ
   CALL IQ puts
   
-  MOV IQ 1 RAQ
+  MOV IQ 0 AQN sys_hd0_target
+  MOV IQ 1 AQN sys_hd0_ctl
+  
+  MOV AQN 0xa05 RAQ
   MOV IQ .s_someboot RBQ
   CALL IQ fs_read_dir
   MOV IQ .s_payload RBQ
@@ -89,6 +95,7 @@ main:
   MOV IQ puts AQN export_puts
   MOV IQ putdec AQN export_putdec
   MOV IQ fs_load_file AQN export_fs_load_file
+  MOV IQ fs_read_dir AQN export_fs_read_dir
   
   JMP IQ bootloader
   

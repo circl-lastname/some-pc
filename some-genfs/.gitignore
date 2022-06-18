@@ -1,0 +1,5 @@
+build
+build.ninja
+.ninja_log
+some-genfs
+disk

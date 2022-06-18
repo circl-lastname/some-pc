@@ -1,23 +1,28 @@
 Block types:
- 0x0 - Block bitmap
+ 0x0 - Superblock
  0x1 - File
  0x2 - Dir
  
 Subblocks are 0x20 long
 
+Superblock header:
+  0x0 - Block type
+  0x1 - Next block of bitmap
+  0x5 - Root dir block
+
 File header:
- 0x0 - Block type
- 0x1 - Next block in a chain
- 0x5 - Bytes in block
+  0x0 - Block type
+  0x1 - Next block in a chain
+  0x5 - Bytes in block
 
 Dir header:
- 0x0 - Block type
- 0x1 - Next block in a chain
+  0x0 - Block type
+  0x1 - Next block in a chain
 
-Entries starts at 0x40
+Entries start at 0x40
 Dir entry:
   Subblock 0:
-    0x0 - Name (up to 31 chars)
+    0x0 - Name (up to 31 chars + null terminator)
   Subblock 1:
     0x0 - Used/unused
     0x1 - Entry type
