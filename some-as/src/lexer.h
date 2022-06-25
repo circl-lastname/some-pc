@@ -46,6 +46,7 @@ typedef struct {
   bool after_newline;
   
   int statement_end_status;
+  int include_status;
   
   long cur_line;
   long cur_char;

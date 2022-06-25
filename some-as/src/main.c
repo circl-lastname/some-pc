@@ -30,6 +30,7 @@ void main(int argc, char** argv) {
   lexs.ch = fgetc(file_in);
   lexs.after_newline = false;
   lexs.statement_end_status = 1;
+  lexs.include_status = 0;
   lexs.cur_line = 0;
   lexs.cur_char = 0;
   lexs.token_cur_line = 0;

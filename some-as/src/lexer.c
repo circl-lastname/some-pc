@@ -218,6 +218,34 @@ static uint32_t parse_integer(lex_state* s, char* string, bool hex) {
   return result;
 }
 
+static void lex_file(lex_state* s, char* filename) {
+  FILE* file_in = try(fopen(filename, "rb"));
+  
+  lex_state lexs;
+  
+  lexs.file = file_in;
+  lexs.filename = filename;
+  lexs.ch = fgetc(file_in);
+  lexs.after_newline = false;
+  lexs.statement_end_status = 1;
+  lexs.include_status = 0;
+  lexs.cur_line = 0;
+  lexs.cur_char = 0;
+  lexs.token_cur_line = 0;
+  lexs.token_cur_char = 0;
+  lexs.counter_disabled = false;
+  lexs.tokens_amount = s->tokens_amount;
+  lexs.tokens_size = s->tokens_size;
+  lexs.tokens = s->tokens;
+  
+  lex(&lexs);
+  
+  fclose(file_in);
+  
+  s->tokens_amount = lexs.tokens_amount;
+  s->tokens_size = lexs.tokens_size;
+}
+
 void lex(lex_state* s) {
   switch (s->ch) {
     case '\n':
@@ -251,7 +279,11 @@ void lex(lex_state* s) {
           consume(s);
           put_token(s, TOKEN_LOCAL_LABEL, TYPE_STRING, &data);
         } else if (s->statement_end_status) {
-          put_token(s, TOKEN_DIRECTIVE, TYPE_STRING, &data);
+          if (!strcmp(data.string, "include")) {
+            s->include_status = 2;
+          } else {
+            put_token(s, TOKEN_DIRECTIVE, TYPE_STRING, &data);
+          }
         } else {
           put_token(s, TOKEN_SYMBOL, TYPE_STRING, &data);
         }
@@ -276,7 +308,12 @@ void lex(lex_state* s) {
         consume(s);
         
         data.string = get_string(s);
-        put_token(s, TOKEN_STRING, TYPE_STRING, &data);
+        if (s->include_status == 1) {
+          lex_file(s, data.string);
+          free(data.string);
+        } else {
+          put_token(s, TOKEN_STRING, TYPE_STRING, &data);
+        }
       break;
       case '\n':
         set_token_cur(s);
@@ -313,6 +350,9 @@ void lex(lex_state* s) {
     
     if (s->statement_end_status != 0) {
       s->statement_end_status--;
+    }
+    if (s->include_status != 0) {
+      s->include_status--;
     }
   }
   break_loop:
