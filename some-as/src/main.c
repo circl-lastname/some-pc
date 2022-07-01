@@ -16,12 +16,6 @@ void main(int argc, char** argv) {
   }
   
   FILE* file_in = try(fopen(argv[1], "rb"));
-  FILE* file_out = try(fopen(argv[2], "wb"));
-  
-  FILE* file_export;
-  if (argv[3]) {
-    file_export = try(fopen(argv[3], "wb"));
-  }
   
   lex_state lexs;
   
@@ -31,6 +25,7 @@ void main(int argc, char** argv) {
   lexs.after_newline = false;
   lexs.statement_end_status = 1;
   lexs.include_status = 0;
+  lexs.put_eof = true;
   lexs.cur_line = 0;
   lexs.cur_char = 0;
   lexs.token_cur_line = 0;
@@ -42,15 +37,17 @@ void main(int argc, char** argv) {
   
   lex(&lexs);
   
+  fclose(file_in);
+  
   #ifdef DEBUG
     print_tokens(&lexs);
   #endif
   
+  FILE* file_out = try(fopen(argv[2], "wb"));
+  
   prs_state prss;
   
   prss.file = file_out;
-  prss.file_in = file_in;
-  prss.filename_in = argv[1];
   prss.tk = &lexs.tokens[0];
   prss.current_token = 0;
   prss.pass = 0;
@@ -72,13 +69,11 @@ void main(int argc, char** argv) {
   // pass 1
   parse(&prss);
   
-  if (argv[3]) {
-    export_labels(&prss, file_export);
-  }
-  
-  fclose(file_in);
   fclose(file_out);
+  
   if (argv[3]) {
+    FILE* file_export = try(fopen(argv[3], "wb"));
+    export_labels(&prss, file_export);
     fclose(file_export);
   }
   
@@ -87,7 +82,6 @@ void main(int argc, char** argv) {
       free(lexs.tokens[i].data.string);
     }
   }
-  
   free(lexs.tokens);
   
   sc_free(prss.global_table);

@@ -11,7 +11,7 @@
 #include "parser.h"
 
 static void error(prs_state* s, const char* string) {
-  print_error_and_exit(s->file_in, s->filename_in, s->tk->cur_line, s->tk->cur_char, string);
+  print_error_and_exit(s->tk->filename, s->tk->cur_line, s->tk->cur_char, string);
 }
 
 static void consume(prs_state* s) {

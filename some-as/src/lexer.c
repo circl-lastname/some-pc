@@ -9,7 +9,11 @@
 #include "lexer.h"
 
 static void error(lex_state* s, const char* string) {
-  print_error_and_exit(s->file, s->filename, s->cur_line, s->cur_char, string);
+  print_error_and_exit(s->filename, s->cur_line, s->cur_char, string);
+}
+
+static void error_tk(lex_state* s, const char* string) {
+  print_error_and_exit(s->filename, s->token_cur_line, s->token_cur_char, string);
 }
 
 static void set_token_cur(lex_state* s) {
@@ -17,12 +21,72 @@ static void set_token_cur(lex_state* s) {
   s->token_cur_char = s->cur_char;
 }
 
+static void lex_file(lex_state* s, char* filename) {
+  FILE* file_in = try(fopen(filename, "rb"));
+  
+  lex_state lexs;
+  
+  lexs.file = file_in;
+  lexs.filename = filename;
+  lexs.ch = fgetc(file_in);
+  lexs.after_newline = false;
+  lexs.statement_end_status = 1;
+  lexs.include_status = 0;
+  lexs.put_eof = false;
+  lexs.cur_line = 0;
+  lexs.cur_char = 0;
+  lexs.token_cur_line = 0;
+  lexs.token_cur_char = 0;
+  lexs.counter_disabled = false;
+  lexs.tokens_amount = s->tokens_amount;
+  lexs.tokens_size = s->tokens_size;
+  lexs.tokens = s->tokens;
+  
+  lex(&lexs);
+  
+  fclose(file_in);
+  
+  s->tokens_amount = lexs.tokens_amount;
+  s->tokens_size = lexs.tokens_size;
+}
+
 static void put_token(lex_state* s, lex_type type, lex_data_type data_type, lex_data* data) {
+  // this parses in place an include directive, allowing it to be easily appended to the token array
+  switch (s->include_status) {
+    case 0:
+      if (type == TOKEN_DIRECTIVE) {
+        if (!strcmp(data->string, "include")) {
+          s->include_status = 1;
+          free(data->string);
+          return;
+        }
+      }
+    break;
+    case 1:
+      if (type == TOKEN_STRING) {
+        lex_file(s, data->string);
+        s->include_status = 2;
+        return;
+      } else {
+        error_tk(s, "Expected string");
+      }
+    break;
+    case 2:
+      if (type == TOKEN_STATEMENT_END) {
+        s->include_status = 0;
+        return;
+      } else {
+        error_tk(s, "Too many arguments for .include");
+      }
+    break;
+  }
+  
   lex_token* token = &s->tokens[s->tokens_amount];
   
   token->type = type;
   token->data_type = data_type;
   token->data = *data;
+  token->filename = s->filename;
   token->cur_line = s->token_cur_line;
   token->cur_char = s->token_cur_char;
   
@@ -32,6 +96,8 @@ static void put_token(lex_state* s, lex_type type, lex_data_type data_type, lex_
     s->tokens_size *= 2;
     s->tokens = try(realloc(s->tokens, s->tokens_size*sizeof(lex_token)));
   }
+  
+  printf("%li\t%li\n", s->tokens_amount, s->tokens_size);
 }
 
 static void consume(lex_state* s) {
@@ -203,11 +269,11 @@ static uint32_t parse_integer(lex_state* s, char* string, bool hex) {
               result += (string[i] - 0x40 + 9) * place;
             break;
             default:
-              error(s, "Unexpected character in number");
+              error_tk(s, "Unexpected character in number");
             break;
           }
         } else {
-          error(s, "Unexpected character in number");
+          error_tk(s, "Unexpected character in number");
         }
       break;
     }
@@ -216,34 +282,6 @@ static uint32_t parse_integer(lex_state* s, char* string, bool hex) {
   }
   
   return result;
-}
-
-static void lex_file(lex_state* s, char* filename) {
-  FILE* file_in = try(fopen(filename, "rb"));
-  
-  lex_state lexs;
-  
-  lexs.file = file_in;
-  lexs.filename = filename;
-  lexs.ch = fgetc(file_in);
-  lexs.after_newline = false;
-  lexs.statement_end_status = 1;
-  lexs.include_status = 0;
-  lexs.cur_line = 0;
-  lexs.cur_char = 0;
-  lexs.token_cur_line = 0;
-  lexs.token_cur_char = 0;
-  lexs.counter_disabled = false;
-  lexs.tokens_amount = s->tokens_amount;
-  lexs.tokens_size = s->tokens_size;
-  lexs.tokens = s->tokens;
-  
-  lex(&lexs);
-  
-  fclose(file_in);
-  
-  s->tokens_amount = lexs.tokens_amount;
-  s->tokens_size = lexs.tokens_size;
 }
 
 void lex(lex_state* s) {
@@ -279,11 +317,7 @@ void lex(lex_state* s) {
           consume(s);
           put_token(s, TOKEN_LOCAL_LABEL, TYPE_STRING, &data);
         } else if (s->statement_end_status) {
-          if (!strcmp(data.string, "include")) {
-            s->include_status = 2;
-          } else {
-            put_token(s, TOKEN_DIRECTIVE, TYPE_STRING, &data);
-          }
+          put_token(s, TOKEN_DIRECTIVE, TYPE_STRING, &data);
         } else {
           put_token(s, TOKEN_SYMBOL, TYPE_STRING, &data);
         }
@@ -308,12 +342,7 @@ void lex(lex_state* s) {
         consume(s);
         
         data.string = get_string(s);
-        if (s->include_status == 1) {
-          lex_file(s, data.string);
-          free(data.string);
-        } else {
-          put_token(s, TOKEN_STRING, TYPE_STRING, &data);
-        }
+        put_token(s, TOKEN_STRING, TYPE_STRING, &data);
       break;
       case '\n':
         set_token_cur(s);
@@ -351,12 +380,15 @@ void lex(lex_state* s) {
     if (s->statement_end_status != 0) {
       s->statement_end_status--;
     }
-    if (s->include_status != 0) {
-      s->include_status--;
-    }
   }
   break_loop:
   
-  set_token_cur(s);
-  put_token(s, TOKEN_EOF, TYPE_NONE, &data);
+  if (s->include_status) {
+    error(s, "Unexpected EOF");
+  }
+  
+  if (s->put_eof) {
+    set_token_cur(s);
+    put_token(s, TOKEN_EOF, TYPE_NONE, &data);
+  }
 }

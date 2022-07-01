@@ -34,6 +34,7 @@ typedef struct {
   lex_data_type data_type;
   lex_data data;
   
+  const char* filename;
   long cur_line;
   long cur_char;
 } lex_token;
@@ -47,6 +48,7 @@ typedef struct {
   
   int statement_end_status;
   int include_status;
+  bool put_eof;
   
   long cur_line;
   long cur_char;

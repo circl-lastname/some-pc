@@ -72,8 +72,9 @@ void sc_free(sc_table* table) {
 
 // this is is a mini-lexer, ripping out some code from it to iterate over the file
 // there may be a more libc-this way to do this
-void print_error_and_exit(FILE* file, const char* filename, long cur_line, long cur_char, const char* string) {
-  rewind(file);
+void print_error_and_exit(const char* filename, long cur_line, long cur_char, const char* string) {
+  FILE* file = try(fopen(filename, "rb"));
+  
   char ch = fgetc(file);
   
   for (int i = 0; i < cur_line; i++) {
@@ -134,5 +135,7 @@ void print_error_and_exit(FILE* file, const char* filename, long cur_line, long 
   free(char_arrow);
   
   fprintf(stderr, "%s:%li:%li  %s\n", filename, cur_line+1, cur_char+1, string);
+  
+  fclose(file);
   exit(1);
 }

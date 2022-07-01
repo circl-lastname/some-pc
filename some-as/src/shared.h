@@ -21,4 +21,4 @@ void sc_add(sc_table* table, char* string, uint32_t value, sc_table* local_table
 sc_entry* sc_get(sc_table* table, char* string);
 void sc_free(sc_table* table);
 
-void print_error_and_exit(FILE* file, const char* filename, long cur_line, long cur_char, const char* string);
+void print_error_and_exit(const char* filename, long cur_line, long cur_char, const char* string);
