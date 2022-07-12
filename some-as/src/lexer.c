@@ -48,6 +48,7 @@ static void lex_file(lex_state* s, char* filename) {
   
   s->tokens_amount = lexs.tokens_amount;
   s->tokens_size = lexs.tokens_size;
+  s->tokens = lexs.tokens;
 }
 
 static void put_token(lex_state* s, lex_type type, lex_data_type data_type, lex_data* data) {
@@ -96,8 +97,6 @@ static void put_token(lex_state* s, lex_type type, lex_data_type data_type, lex_
     s->tokens_size *= 2;
     s->tokens = try(realloc(s->tokens, s->tokens_size*sizeof(lex_token)));
   }
-  
-  printf("%li\t%li\n", s->tokens_amount, s->tokens_size);
 }
 
 static void consume(lex_state* s) {
