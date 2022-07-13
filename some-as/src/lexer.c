@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <errno.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -23,7 +24,10 @@ static void set_token_cur(lex_state* s) {
 }
 
 static void lex_file(lex_state* s, char* filename) {
-  FILE* file_in = try(fopen(filename, "rb"));
+  FILE* file_in = fopen(filename, "rb");
+  if (!file_in) {
+    error_tk(s, strerror(errno));
+  }
   
   lex_state lexs;
   
