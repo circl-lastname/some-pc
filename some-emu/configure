@@ -35,7 +35,7 @@ generate_ninja () {
   touch build.ninja
   
   CC=${CC:-gcc}
-  CFLAGS=${CFLAGS:-"-O3 -I../include"}
+  CFLAGS=${CFLAGS:-"-O3 -I../include -I."}
   LDFLAGS=${LDFLAGS:-"-s"}
   DESTDIR=${DESTDIR:-"/usr/local/bin"}
   dir=${dir:-build}
@@ -77,6 +77,18 @@ build $DESTDIR/$target: install $target
 build install: phony $DESTDIR/$target
 default $target
 EOF
+  
+  if [ ! -f config.h ]; then
+cat << EOF > config.h
+#define ROM_FILE "rom"
+#define HD0_FILE "disk"
+
+#define MEMORY_SIZE 1048576
+#define ROM_BASE 0x1000
+
+//#define WAIT 5000
+EOF
+  fi
 }
 
 if [ "$1" = "--help" ]; then
@@ -85,7 +97,7 @@ if [ "$1" = "--help" ]; then
 elif [ -z "$1" ]; then
   generate_ninja
 elif [ "$1" = "--debug" ]; then
-  CFLAGS="-O3 -I../include -D DEBUG -g"
+  CFLAGS="-O3 -I../include -I. -D DEBUG -g"
   LDFLAGS=" "
   generate_ninja
 else

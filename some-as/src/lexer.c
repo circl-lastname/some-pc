@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "salloc.h"
 #include "shared.h"
 #include "lexer.h"
 
@@ -38,6 +39,7 @@ static void lex_file(lex_state* s, char* filename) {
   lexs.token_cur_line = 0;
   lexs.token_cur_char = 0;
   lexs.counter_disabled = false;
+  lexs.tokens_scope = s->tokens_scope;
   lexs.tokens_amount = s->tokens_amount;
   lexs.tokens_size = s->tokens_size;
   lexs.tokens = s->tokens;
@@ -57,15 +59,18 @@ static void put_token(lex_state* s, lex_type type, lex_data_type data_type, lex_
     case 0:
       if (type == TOKEN_DIRECTIVE) {
         if (!strcmp(data->string, "include")) {
-          s->include_status = 1;
           free(data->string);
+          
+          s->include_status = 1;
           return;
         }
       }
     break;
     case 1:
       if (type == TOKEN_STRING) {
+        strack(s->tokens_scope, data->string);
         lex_file(s, data->string);
+        
         s->include_status = 2;
         return;
       } else {
@@ -82,6 +87,10 @@ static void put_token(lex_state* s, lex_type type, lex_data_type data_type, lex_
     break;
   }
   
+  if (data_type == TYPE_STRING) {
+    strack(s->tokens_scope, data->string);
+  }
+  
   lex_token* token = &s->tokens[s->tokens_amount];
   
   token->type = type;
@@ -95,7 +104,7 @@ static void put_token(lex_state* s, lex_type type, lex_data_type data_type, lex_
   
   if (s->tokens_amount >= s->tokens_size) {
     s->tokens_size *= 2;
-    s->tokens = try(realloc(s->tokens, s->tokens_size*sizeof(lex_token)));
+    s->tokens = try(srealloc(s->tokens_scope, s->tokens, s->tokens_size*sizeof(lex_token)));
   }
 }
 

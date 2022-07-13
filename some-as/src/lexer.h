@@ -56,6 +56,7 @@ typedef struct {
   long token_cur_char;
   bool counter_disabled;
   
+  ascope_t* tokens_scope;
   long tokens_amount;
   size_t tokens_size;
   lex_token* tokens;

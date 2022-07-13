@@ -3,7 +3,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "config.h"
+#include <config.h>
+
 #include "memory.h"
 
 uint8_t memory[MEMORY_SIZE];

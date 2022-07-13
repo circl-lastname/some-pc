@@ -3,6 +3,7 @@
   #include <stdbool.h>
   #include <stdio.h>
   
+  #include "salloc.h"
   #include "lexer.h"
   
   void print_tokens(lex_state* s) {

@@ -6,7 +6,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "config.h"
+#include <config.h>
+
 #include "memory.h"
 #include "cpu.h"
 

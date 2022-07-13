@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "salloc.h"
 #include "shared.h"
 #include "lexer.h"
 #include "parser.h"
@@ -31,9 +32,10 @@ void main(int argc, char** argv) {
   lexs.token_cur_line = 0;
   lexs.token_cur_char = 0;
   lexs.counter_disabled = false;
+  lexs.tokens_scope = salloc();
   lexs.tokens_amount = 0;
   lexs.tokens_size = 256;
-  lexs.tokens = try(malloc(256*sizeof(lex_token)));
+  lexs.tokens = try(smalloc(lexs.tokens_scope, 256*sizeof(lex_token)));
   
   lex(&lexs);
   
@@ -71,18 +73,13 @@ void main(int argc, char** argv) {
   
   fclose(file_out);
   
+  sfree(lexs.tokens_scope);
+  
   if (argv[3]) {
     FILE* file_export = try(fopen(argv[3], "wb"));
     export_labels(&prss, file_export);
     fclose(file_export);
   }
-  
-  for (long i = 0; i < lexs.tokens_amount; i++) {
-    if (lexs.tokens[i].data_type == TYPE_STRING) {
-      free(lexs.tokens[i].data.string);
-    }
-  }
-  free(lexs.tokens);
   
   sc_free(prss.global_table);
 }

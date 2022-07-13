@@ -4,9 +4,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include <config.h>
 #include <isa.h>
 
-#include "config.h"
 #include "memory.h"
 #include "acs.h"
 

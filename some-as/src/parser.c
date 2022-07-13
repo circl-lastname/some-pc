@@ -6,6 +6,7 @@
 
 #include <isa.h>
 
+#include "salloc.h"
 #include "shared.h"
 #include "lexer.h"
 #include "parser.h"
